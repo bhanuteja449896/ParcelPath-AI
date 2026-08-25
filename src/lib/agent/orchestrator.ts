@@ -5,6 +5,7 @@ import { getLLMClient } from "../llm/client";
 import { documentSearch, documentSearchSchema } from "./tools/documentSearch";
 import { dataLookup, dataLookupSchema } from "./tools/dataLookup";
 import { calculate, calculateSchema } from "./tools/calculate";
+import { draftAction, draftActionSchema } from "./tools/draftAction";
 import { zodFunction } from "openai/helpers/zod";
 import OpenAI from "openai";
 
@@ -57,6 +58,10 @@ async function executeTool(ctx: AgentContext, name: string, argsStr: string): Pr
         const parsed = calculateSchema.parse(args);
         return await calculate(ctx, parsed);
       }
+      case "draft_action": {
+        const parsed = draftActionSchema.parse(args);
+        return await draftAction(ctx, parsed);
+      }
       default:
         return JSON.stringify({ error: `Tool ${name} not found or not authorized.` });
     }
@@ -92,6 +97,11 @@ export async function runAgentLoop(ctx: AgentContext, messages: ChatMessage[]): 
       name: "calculate",
       description: "Calculate cancellation fees, service credits, or SLA remaining. ALWAYS use this instead of doing math yourself.",
       parameters: calculateSchema,
+    }),
+    zodFunction({
+      name: "draft_action",
+      description: "Draft a state-changing action like cancel_order or update_ticket. This creates a pending action that the user must confirm.",
+      parameters: draftActionSchema,
     })
   ];
 
