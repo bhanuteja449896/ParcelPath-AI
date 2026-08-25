@@ -20,7 +20,7 @@ export async function withUserContext<T>(
 ): Promise<T> {
   const db = client ?? getDb();
 
-  return await db.begin(async (tx) => {
+  return (await db.begin(async (tx) => {
     // Inject context into postgres session config (is_local = true means scoped to this transaction).
     // Coalescing to empty string for null accountId as set_config expects text.
     await tx`
@@ -31,5 +31,5 @@ export async function withUserContext<T>(
     `;
     
     return await fn(tx);
-  });
+  })) as T;
 }
