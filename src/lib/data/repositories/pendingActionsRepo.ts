@@ -84,6 +84,22 @@ export const pendingActionsRepo = {
   },
 
   /**
+   * Lists all pending actions.
+   * RLS automatically restricts this to ops_manager role.
+   */
+  async listForOps(ctx: AgentContext): Promise<PendingAction[]> {
+    return await withUserContext(ctx, async (tx) => {
+      const rows = await tx<any[]>`
+        SELECT ${tx.unsafe(SELECT_COLUMNS)}
+        FROM pending_actions
+        WHERE status = 'awaiting_confirmation'
+        ORDER BY created_at DESC
+      `;
+      return rows as PendingAction[];
+    });
+  },
+
+  /**
    * Updates an action to be executed.
    */
   async markExecuted(ctx: AgentContext, actionId: string, resultPayload?: any): Promise<boolean> {
