@@ -12,7 +12,8 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "ingest:data": "tsx scripts/ingestData.ts",
     "ingest:docs": "tsx scripts/ingestDocs.ts",
-    "seed": "npm run db:migrate && npm run ingest:data && npm run ingest:docs"
+    "seed:users": "tsx scripts/seedUsers.ts",
+    "seed": "npm run db:migrate && npm run ingest:data && npm run ingest:docs && npm run seed:users"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.1.0",
