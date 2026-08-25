@@ -1,0 +1,53 @@
+# Kilo (AI tooling) — keep out of the client project
+.kilo/
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.python-version
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Caches
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vite/
+coverage/
+
+# OS junk
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+
+# Local data / uploads (keep the supplied data pack tracked intentionally)
+uploads/
+tmp/
