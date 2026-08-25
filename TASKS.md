@@ -84,11 +84,11 @@ T01 ─┬─► T02 ─► T03 ─► T04 ─► T05 ─┬─► T06 ─► T0
 ## Phase 3 — Data Ingestion
 
 ### T10 — XLSX ingestion
-- [ ] `scripts/ingestData.ts`: workbook → accounts/orders/tickets; README sheet → `system_metadata.reference_time`; historical resolutions flagged; prod reseed guard
+- [x] `scripts/ingestData.ts`: workbook → accounts/orders/tickets; README sheet → `system_metadata.reference_time`; historical resolutions flagged; prod reseed guard
 - Refs: §16–17 · Done when: row counts match workbook; idempotent rerun; reference_time set.
 
 ### T11 — PDF ingestion (RAG)
-- [ ] `scripts/ingestDocs.ts`: extract → chunk (~500 tok) → embed (`EMBED_MODEL`) → `documents`/`document_chunks` with authority tier + account scope metadata; hnsw + GIN indexes; idempotent by slug
+- [x] `scripts/ingestDocs.ts`: extract → chunk (~500 tok) → embed (`EMBED_MODEL`) → `documents`/`document_chunks` with authority tier + account scope metadata; hnsw + GIN indexes; idempotent by slug
 - Refs: §14–15 · Done when: 6 docs indexed; hybrid search returns sensible ranked chunks with tiers.
 
 ### T12 — Seed orchestration
