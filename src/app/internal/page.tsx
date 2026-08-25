@@ -6,6 +6,7 @@ import { getSessionTokenFromCookieStore, resolveSession } from "@/lib/auth/sessi
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { ApprovalsQueue } from "@/components/internal/ApprovalsQueue";
 import { AuditViewer } from "@/components/internal/AuditViewer";
+import { IssuesDashboard } from "@/components/internal/IssuesDashboard";
 
 export const metadata: Metadata = {
   title: "Internal Console — ParcelPilot",
@@ -52,18 +53,20 @@ export default async function InternalPage() {
         </div>
       </header>
       
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Support Agent Copilot */}
-        <div className="lg:col-span-1 flex flex-col gap-6">
-          <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">Support Copilot</h2>
-            {/* We reuse the ChatInterface. The Agent Context handles the different prompt logic automatically! */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Support Agent Copilot & Insights */}
+        <div className="xl:col-span-1 flex flex-col gap-6">
+          <section className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 shadow-sm">
+            <IssuesDashboard />
+          </section>
+
+          <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
             <ChatInterface />
           </section>
         </div>
 
         {/* Manager Tools */}
-        <div className="lg:col-span-2 flex flex-col gap-8">
+        <div className="xl:col-span-2 flex flex-col gap-8">
           {isManager ? (
             <>
               <section className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
