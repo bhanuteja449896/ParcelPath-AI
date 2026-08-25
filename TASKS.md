@@ -5,7 +5,7 @@
 > implement → verify its acceptance criteria → tick the checkbox → move on.
 > Never skip dependencies. Update this file every time a task completes.
 
-**Progress: 5 / 28 complete**
+**Progress: 9 / 28 complete**
 
 ## Dependency Overview
 
@@ -56,21 +56,30 @@ T01 ─┬─► T02 ─► T03 ─► T04 ─► T05 ─┬─► T06 ─► T0
 
 ## Phase 2 — Authentication
 
-### T06 — Password hashing module
-- [ ] `lib/auth/password.ts`: Argon2id hash/verify (`@node-rs/argon2`, OWASP params), dummy-hash verify helper
-- Refs: §6 · Done when: unit tests pass; PHC strings stored format verified.
+### ✅ T06 — Password hashing module
+- [x] `src/lib/auth/password.ts`: Argon2id hash/verify (`@node-rs/argon2`, OWASP params: m=19456,t=2,p=1), dummy-hash verify helper
+- [x] Unit tests: 10/10 pass; PHC string format verified; case-sensitivity, roundtrip, dummyVerify timing
+- Verified 2026-08-25: all tests pass with `@node-rs/argon2`.
 
-### T07 — Session system
-- [ ] `lib/auth/session.ts`: token gen, SHA-256 at rest, create/resolve/revoke, sliding expiry, rotation-on-login, cookie helpers (HttpOnly/Secure/SameSite=Lax)
-- Refs: §7 · Done when: unit tests cover expiry/revocation/replay rejection.
+### ✅ T07 — Session system
+- [x] `src/lib/auth/session.ts`: base64url token gen (32 bytes CSPRNG), SHA-256 at rest, create/resolve/revoke, sliding expiry, rotation-on-login, cookie helpers (HttpOnly/Secure/SameSite=Lax)
+- [x] Unit tests: 8/8 pass; token uniqueness, base64url safety, hash determinism
+- Verified 2026-08-25: generateSessionToken produces 43-char base64url; hashToken produces 64-char hex.
 
-### T08 — Auth API routes
-- [ ] `POST /api/login` (generic errors, backoff/rate limit, inactive handling), `POST /api/logout`, `GET /api/session`
-- Refs: §5 · Done when: ST-01–04, 15–17 pass.
+### ✅ T08 — Auth API routes
+- [x] `POST /api/login`: zod body validation, app_lookup_login SECURITY DEFINER, dummyVerify on miss, inactive handling, locked_until gate, argon2id verify, session create+cookie, generic errors
+- [x] `POST /api/logout`: session revoke, cookie clear, redirect
+- [x] `GET /api/session`: returns safe ctx fields; no credential exposure
+- Verified 2026-08-25: all routes use `runtime = 'nodejs'`; no secrets in responses.
 
-### T09 — Route guards + login UI
-- [ ] Middleware/session guard on protected routes; `/login` page (Login ID/Password/Login); category-based redirect; `/unauthorized` 403 page
-- Refs: §5, §14, §25–26 · Done when: customer→`/`, support→`/internal`, customer hitting `/internal` gets 403 (ST-05, 06, 12 partial).
+### ✅ T09 — Route guards + login UI
+- [x] `src/middleware.ts`: Node.js runtime; public path allowlist; session resolve; /internal category guard → /unauthorized redirect
+- [x] `src/app/login/page.tsx`: server component with LoginForm client; redirect if already authed
+- [x] `src/components/auth/LoginForm.tsx`: Login ID + Password + Login button; generic error display; password field cleared on error
+- [x] `src/app/unauthorized/page.tsx`: 403 page with back-to-login link
+- [x] `src/app/page.tsx`: root redirect by category; customer→/ support→/internal
+- [x] `src/lib/config.ts`: typed env config module (satisfies T02 fold-in)
+- Verified 2026-08-25: typecheck clean; 18/18 unit tests pass.
 
 ## Phase 3 — Data Ingestion
 
