@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Login page (ARCHITECTURE.md SS5, SS25, TASKS.md T09).
  * Server component — redirects to home if already authenticated.
  */
@@ -55,6 +55,18 @@ export default async function LoginPage() {
           <br />
           Staff access is scoped by role and fully audit-logged.
         </p>
+
+        <div className="mt-6 flex flex-col gap-2 rounded-xl border border-line bg-surface-inset p-4 text-[12.5px] text-ink-2 shadow-sm">
+          <p className="font-semibold text-ink">Demo Credentials</p>
+          <div className="flex justify-between border-b border-line pb-1.5">
+            <span><strong>Customer:</strong> northstar_admin</span>
+            <span className="font-mono">Demo1234!</span>
+          </div>
+          <div className="flex justify-between pt-0.5">
+            <span><strong>Support:</strong> support01</span>
+            <span className="font-mono">Demo1234!</span>
+          </div>
+        </div>
       </div>
     </main>
   );
