@@ -1,4 +1,4 @@
-﻿/**
+/**
  * POST /api/login — Custom authentication endpoint (ARCHITECTURE.md SS5, TASKS.md T08).
  *
  * Flow:
@@ -61,10 +61,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         category: string;
       }[]
     >`
-      SELECT u.id, u.password_hash, u.is_active,
-             u.failed_login_count, u.locked_until, u.category
+      SELECT l.id, l.password_hash, l.is_active,
+             l.failed_login_count, l.locked_until, l.category
       FROM app_lookup_login(${body.loginId}) l
-      JOIN users u ON u.id = l.id
     `;
 
     // ── 3. Not found → dummy verify → generic 401 ──────────────────────────

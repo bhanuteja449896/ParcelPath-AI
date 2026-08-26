@@ -43,9 +43,9 @@ export async function POST(
       // Audit log
       await tx`
         INSERT INTO audit_log (
-          actor_id, actor_category, actor_role, action, resource_type, pending_action_id, outcome, metadata
+          actor_user_id, actor_category, actor_role, account_id, action, resource_type, pending_action_id, outcome, metadata
         ) VALUES (
-          ${ctx.userId}, ${ctx.category}, ${ctx.role}, 'decline_action', 'pending_action', ${id}, 'success', '{}'::jsonb
+          ${ctx.userId}, ${ctx.category}, ${ctx.role}, ${ctx.accountId}, 'decline_action', 'pending_action', ${id}, 'rejected', '{}'::jsonb
         )
       `;
     });

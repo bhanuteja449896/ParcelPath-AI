@@ -49,25 +49,25 @@ export async function POST(
 
       // 6. Semantic validators & Re-check resource
       const payload = action.payload as Record<string, any>;
-      let outcomeData: any = {};
+      const outcomeData: any = {};
       
       if (action.action_type === 'cancel_order') {
-        const orderRows = await tx`SELECT status FROM orders WHERE id = ${payload.orderId} AND account_id = ${action.target_account_id}`;
+        const orderRows = await tx`SELECT status FROM orders WHERE order_id = ${payload.orderId} AND account_id = ${action.target_account_id}`;
         if (orderRows.length === 0) throw new Error("Order not found in scope.");
         if (orderRows[0].status === 'cancelled') throw new Error("Order is already cancelled.");
         
         // 9. Execute mutation
-        await tx`UPDATE orders SET status = 'cancelled' WHERE id = ${payload.orderId}`;
+        await tx`UPDATE orders SET status = 'cancelled', cancelled_at = now() WHERE order_id = ${payload.orderId} AND account_id = ${action.target_account_id}`;
         
         // 10. Audit log
         await tx`
-          INSERT INTO audit_log (actor_id, actor_category, actor_role, action, resource_type, resource_id, old_state, new_state, pending_action_id, outcome, metadata)
-          VALUES (${ctx.userId}, ${ctx.category}, ${ctx.role}, 'cancel_order', 'order', ${payload.orderId}, ${tx.json({status: orderRows[0].status})}, ${tx.json({status: 'cancelled'})}, ${id}, 'success', '{}'::jsonb)
+          INSERT INTO audit_log (actor_user_id, actor_category, actor_role, account_id, action, resource_type, resource_id, old_state, new_state, pending_action_id, outcome, metadata)
+          VALUES (${ctx.userId}, ${ctx.category}, ${ctx.role}, ${action.target_account_id}, 'cancel_order', 'order', ${payload.orderId}, ${tx.json({status: orderRows[0].status})}, ${tx.json({status: 'cancelled'})}, ${id}, 'success', '{}'::jsonb)
         `;
         outcomeData.message = `Order ${payload.orderId} cancelled successfully.`;
       } 
       else if (action.action_type === 'update_ticket') {
-        const ticketRows = await tx`SELECT status, priority FROM tickets WHERE id = ${payload.ticketId} AND account_id = ${action.target_account_id}`;
+        const ticketRows = await tx`SELECT status, priority FROM tickets WHERE ticket_id = ${payload.ticketId} AND account_id = ${action.target_account_id}`;
         if (ticketRows.length === 0) throw new Error("Ticket not found in scope.");
         
         const updates: Record<string, any> = {};
@@ -76,31 +76,31 @@ export async function POST(
         
         if (Object.keys(updates).length > 0) {
           // Dynamic update is tricky with tagged templates, so we do it safely:
-          if (payload.status && payload.priority) {
-             await tx`UPDATE tickets SET status = ${payload.status}, priority = ${payload.priority} WHERE id = ${payload.ticketId}`;
-          } else if (payload.status) {
-             await tx`UPDATE tickets SET status = ${payload.status} WHERE id = ${payload.ticketId}`;
-          } else if (payload.priority) {
-             await tx`UPDATE tickets SET priority = ${payload.priority} WHERE id = ${payload.ticketId}`;
-          }
+         if (payload.status && payload.priority) {
+             await tx`UPDATE tickets SET status = ${payload.status}, priority = ${payload.priority} WHERE ticket_id = ${payload.ticketId} AND account_id = ${action.target_account_id}`;
+           } else if (payload.status) {
+             await tx`UPDATE tickets SET status = ${payload.status} WHERE ticket_id = ${payload.ticketId} AND account_id = ${action.target_account_id}`;
+           } else if (payload.priority) {
+             await tx`UPDATE tickets SET priority = ${payload.priority} WHERE ticket_id = ${payload.ticketId} AND account_id = ${action.target_account_id}`;
+           }
         }
         
         // 10. Audit log
         await tx`
-          INSERT INTO audit_log (actor_id, actor_category, actor_role, action, resource_type, resource_id, old_state, new_state, pending_action_id, outcome, metadata)
-          VALUES (${ctx.userId}, ${ctx.category}, ${ctx.role}, 'update_ticket', 'ticket', ${payload.ticketId}, ${tx.json(ticketRows[0])}, ${tx.json(updates)}, ${id}, 'success', '{}'::jsonb)
+          INSERT INTO audit_log (actor_user_id, actor_category, actor_role, account_id, action, resource_type, resource_id, old_state, new_state, pending_action_id, outcome, metadata)
+          VALUES (${ctx.userId}, ${ctx.category}, ${ctx.role}, ${action.target_account_id}, 'update_ticket', 'ticket', ${payload.ticketId}, ${tx.json(ticketRows[0])}, ${tx.json(updates)}, ${id}, 'success', '{}'::jsonb)
         `;
         outcomeData.message = `Ticket ${payload.ticketId} updated successfully.`;
       }
       else if (action.action_type === 'create_escalation') {
-        const ticketRows = await tx`SELECT status FROM tickets WHERE id = ${payload.ticketId} AND account_id = ${action.target_account_id}`;
+        const ticketRows = await tx`SELECT status FROM tickets WHERE ticket_id = ${payload.ticketId} AND account_id = ${action.target_account_id}`;
         if (ticketRows.length === 0) throw new Error("Ticket not found in scope.");
         
-        await tx`UPDATE tickets SET status = 'escalated' WHERE id = ${payload.ticketId}`;
+        await tx`UPDATE tickets SET status = 'escalated' WHERE ticket_id = ${payload.ticketId} AND account_id = ${action.target_account_id}`;
         
         await tx`
-          INSERT INTO audit_log (actor_id, actor_category, actor_role, action, resource_type, resource_id, old_state, new_state, pending_action_id, outcome, metadata)
-          VALUES (${ctx.userId}, ${ctx.category}, ${ctx.role}, 'create_escalation', 'ticket', ${payload.ticketId}, ${tx.json({status: ticketRows[0].status})}, ${tx.json({status: 'escalated'})}, ${id}, 'success', '{}'::jsonb)
+          INSERT INTO audit_log (actor_user_id, actor_category, actor_role, account_id, action, resource_type, resource_id, old_state, new_state, pending_action_id, outcome, metadata)
+          VALUES (${ctx.userId}, ${ctx.category}, ${ctx.role}, ${action.target_account_id}, 'create_escalation', 'ticket', ${payload.ticketId}, ${tx.json({status: ticketRows[0].status})}, ${tx.json({status: 'escalated'})}, ${id}, 'success', '{}'::jsonb)
         `;
         outcomeData.message = `Ticket ${payload.ticketId} escalated.`;
       }
@@ -125,8 +125,8 @@ export async function POST(
     // We will do a separate insert for the failure log.
     try {
        await db`
-          INSERT INTO audit_log (actor_id, actor_category, actor_role, action, resource_type, pending_action_id, outcome, metadata)
-          VALUES (${ctx.userId}, ${ctx.category}, ${ctx.role}, 'confirm_action_failed', 'pending_action', ${id}, 'failed', ${db.json({error: error.message})})
+          INSERT INTO audit_log (actor_user_id, actor_category, actor_role, account_id, action, resource_type, pending_action_id, outcome, metadata)
+          VALUES (${ctx.userId}, ${ctx.category}, ${ctx.role}, ${ctx.accountId}, 'confirm_action_failed', 'pending_action', ${id}, 'failed', ${db.json({error: error.message})})
        `;
     } catch (e) {
        // Ignore secondary audit failure

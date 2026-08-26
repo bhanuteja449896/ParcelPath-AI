@@ -5,27 +5,26 @@ export interface Ticket {
   id: string;
   ticketId: string;
   accountId: string;
-  orderId: string | null;
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
-  priority: 'low' | 'normal' | 'high' | 'urgent';
+  category: string;
+  status: 'open' | 'pending' | 'escalated' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   subject: string;
   description: string;
-  resolutionNotes: string | null;
+  historicalResolution: string | null;
   resolutionIsHistorical: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const SELECT_COLUMNS = `
-  id,
   ticket_id AS "ticketId",
   account_id AS "accountId",
-  order_id AS "orderId",
+  category,
   status,
   priority,
   subject,
   description,
-  resolution_notes AS "resolutionNotes",
+  historical_resolution AS "historicalResolution",
   resolution_is_historical AS "resolutionIsHistorical",
   created_at AS "createdAt",
   updated_at AS "updatedAt"
@@ -62,19 +61,32 @@ export const ticketsRepo = {
   },
 
   /**
+   * Lists all tickets visible to the current user (used by support).
+   */
+  async listAll(ctx: AgentContext): Promise<Ticket[]> {
+    return await withUserContext(ctx, async (tx) => {
+      const rows = await tx<any[]>`
+        SELECT ${tx.unsafe(SELECT_COLUMNS)}
+        FROM tickets
+        ORDER BY created_at DESC
+      `;
+      return rows as Ticket[];
+    });
+  },
+
+  /**
    * Safely mutates a ticket's properties.
    */
   async updateTicket(
     ctx: AgentContext, 
     ticketId: string, 
-    changes: { status?: Ticket['status'], priority?: Ticket['priority'], resolutionNotes?: string }
+    changes: { status?: Ticket['status'], priority?: Ticket['priority'] }
   ): Promise<boolean> {
     return await withUserContext(ctx, async (tx) => {
       // Build dynamic update query
       const updates: any = {};
       if (changes.status !== undefined) updates.status = changes.status;
       if (changes.priority !== undefined) updates.priority = changes.priority;
-      if (changes.resolutionNotes !== undefined) updates.resolution_notes = changes.resolutionNotes;
       
       if (Object.keys(updates).length === 0) return true;
 

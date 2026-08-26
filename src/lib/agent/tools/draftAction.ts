@@ -7,9 +7,14 @@ import { ticketsRepo } from "@/lib/data/repositories/ticketsRepo";
 export const draftActionSchema = z.object({
   type: z.enum(["cancel_order", "update_ticket", "create_escalation", "create_follow_up_task"])
     .describe("The type of action to draft."),
-  params: z.record(z.string(), z.any())
-    .describe("The payload for the action. For cancel_order: { orderId }. For update_ticket: { ticketId, status, priority, internalNote }."),
-  rationale: z.string().describe("The reason for drafting this action. Shown to the user."),
+  params: z.object({
+    orderId:       z.string().nullable().describe("For cancel_order: the order business ID (e.g. ORD-1001). Null otherwise."),
+    ticketId:      z.string().nullable().describe("For update_ticket / create_escalation: the ticket business ID (e.g. TKT-2001). Null otherwise."),
+    status:        z.string().nullable().describe("For update_ticket: the new status value. Null if not changing status."),
+    priority:      z.string().nullable().describe("For update_ticket: the new priority. Null if not changing priority."),
+    internalNote:  z.string().nullable().describe("For update_ticket: an internal note to add. Null if not adding a note."),
+  }).describe("The payload for the action. Populate only the fields relevant to the action type, set others to null."),
+  rationale: z.string().describe("The reason for drafting this action. Shown to the user for confirmation."),
 });
 
 export type DraftActionArgs = z.infer<typeof draftActionSchema>;
@@ -26,14 +31,9 @@ export async function draftAction(ctx: AgentContext, args: DraftActionArgs): Pro
         const orderId = args.params.orderId;
         if (!orderId) throw new Error("Missing orderId in params");
         
-        // Semantic validation: verify the order exists and is accessible
         const order = await ordersRepo.getByOrderId(ctx, orderId);
         if (!order) throw new Error(`Order ${orderId} not found or access denied.`);
         if (order.status === "cancelled") throw new Error(`Order ${orderId} is already cancelled.`);
-        
-        // Check authorization matrix (e.g. only northstar can cancel orders, or specific roles)
-        // This is handled by RLS on insert in theory, but we can do an explicit check here if needed.
-        // Actually, the matrix is applied at execution time. The draft can be created.
         
         targetAccountId = order.accountId;
         resourceType = "order";
@@ -68,7 +68,6 @@ export async function draftAction(ctx: AgentContext, args: DraftActionArgs): Pro
         break;
       }
       case "create_follow_up_task": {
-        // ... handled generically for now
         displaySummary = `Create follow up task: ${args.rationale}`;
         break;
       }

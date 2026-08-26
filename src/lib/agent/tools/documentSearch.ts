@@ -6,8 +6,9 @@ import { formatChunksForLLM } from "../trust";
 
 export const documentSearchSchema = z.object({
   query: z.string().describe("The search query. Should be a full sentence describing the issue or question."),
-  topicHint: z.string().optional().describe("Optional topic hint (e.g. 'cancellation', 'SLA') to aid logging/filtering."),
+  topicHint: z.string().nullable().describe("Optional topic hint (e.g. 'cancellation', 'SLA') to aid logging/filtering. Pass null if not applicable."),
 });
+
 
 export type DocumentSearchArgs = z.infer<typeof documentSearchSchema>;
 

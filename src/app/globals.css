@@ -1,49 +1,228 @@
-﻿/* ParcelPilot global styles */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@import "tailwindcss";
+
+/* ── ParcelPilot design tokens ────────────────────────────────────────────
+   Semantic variables are defined per theme; Tailwind utilities are mapped
+   to them via @theme inline below. Never hard-code raw colors in components.
+--------------------------------------------------------------------------- */
 
 :root {
-  --bg: #0f1117;
-  --surface: #1a1d2e;
-  --surface-2: #242840;
-  --border: #2e3250;
-  --accent: #6c63ff;
-  --accent-hover: #7c74ff;
-  --text: #e8eaf6;
-  --text-muted: #9094b8;
-  --error: #ff5c5c;
-  --success: #4caf7d;
-  --radius: 12px;
-  --font: "Inter", system-ui, -apple-system, sans-serif;
+  /* Surfaces */
+  --canvas: #f6f7fa;
+  --surface: #ffffff;
+  --surface-2: #eef0f5;
+  --surface-inset: #f3f4f8;
+  --line: #e3e6ee;
+  --line-strong: #c9cede;
+
+  /* Ink */
+  --ink: #181b27;
+  --ink-2: #494f63;
+  --ink-3: #828aa0;
+  --ink-inverse: #ffffff;
+
+  /* Brand */
+  --brand: #4f46e5;
+  --brand-hover: #4338ca;
+  --brand-active: #3730a3;
+  --brand-soft: #eceafd;
+  --brand-ink: #4338ca;
+  --on-brand: #ffffff;
+
+  /* Semantic */
+  --success: #15803d;
+  --success-soft: #e8f6ee;
+  --warning: #b45309;
+  --warning-soft: #fdf3e3;
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --danger-soft: #fdecec;
+  --info: #1d4ed8;
+  --info-soft: #e9effd;
+
+  /* Elevation */
+  --shadow-card: 0 1px 2px rgb(23 27 41 / 0.05);
+  --shadow-pop: 0 4px 12px rgb(23 27 41 / 0.08), 0 12px 32px rgb(23 27 41 / 0.10);
+  --shadow-sheet: -8px 0 40px rgb(23 27 41 / 0.14);
+
+  color-scheme: light;
 }
+
+[data-theme="dark"] {
+  --canvas: #0d0f16;
+  --surface: #14161f;
+  --surface-2: #1c1f2b;
+  --surface-inset: #191c27;
+  --line: #262a38;
+  --line-strong: #39405a;
+
+  --ink: #ecedf4;
+  --ink-2: #a6acc0;
+  --ink-3: #707691;
+  --ink-inverse: #0d0f16;
+
+  --brand: #6d64f0;
+  --brand-hover: #7f77f3;
+  --brand-active: #948df6;
+  --brand-soft: #232244;
+  --brand-ink: #a5a0f7;
+  --on-brand: #ffffff;
+
+  --success: #46c98a;
+  --success-soft: #12291f;
+  --warning: #e0a44c;
+  --warning-soft: #2c2312;
+  --danger: #f07171;
+  --danger-hover: #f58e8e;
+  --danger-soft: #33191b;
+  --info: #7ba3f5;
+  --info-soft: #18233d;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-pop: 0 4px 12px rgb(0 0 0 / 0.45), 0 12px 32px rgb(0 0 0 / 0.5);
+  --shadow-sheet: -8px 0 40px rgb(0 0 0 / 0.55);
+
+  color-scheme: dark;
+}
+
+/* ── Tailwind theme mapping ─────────────────────────────────────────────── */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-inset: var(--surface-inset);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-inverse: var(--ink-inverse);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-active: var(--brand-active);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-ink: var(--brand-ink);
+  --color-on-brand: var(--on-brand);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
+  --shadow-sheet: var(--shadow-sheet);
+
+  --animate-message-in: messageIn 0.28s cubic-bezier(0.21, 0.61, 0.35, 1) both;
+  --animate-overlay-in: overlayIn 0.18s ease-out both;
+  --animate-sheet-in-right: sheetInRight 0.26s cubic-bezier(0.21, 0.61, 0.35, 1) both;
+  --animate-sheet-in-bottom: sheetInBottom 0.3s cubic-bezier(0.21, 0.61, 0.35, 1) both;
+  --animate-step-in: stepIn 0.22s ease-out both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-blink: blink 1s ease-in-out infinite;
+
+  @keyframes messageIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes overlayIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes sheetInRight {
+    from { opacity: 0; transform: translateX(32px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes sheetInBottom {
+    from { opacity: 0; transform: translateY(48px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes stepIn {
+    from { opacity: 0; transform: translateY(3px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes shimmer {
+    from { background-position: 200% 0; }
+    to   { background-position: -200% 0; }
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
 html, body {
   height: 100%;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
+  background: var(--canvas);
+  color: var(--ink);
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
+body { margin: 0; overflow-x: hidden; }
+
+a { color: var(--brand-ink); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button { cursor: pointer; font-family: inherit; }
+button:disabled { cursor: not-allowed; }
+input, textarea, select { font-family: inherit; font-size: inherit; }
+
+/* Visible, consistent focus ring everywhere */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
-a:hover {
-  text-decoration: underline;
+/* Scrollbars — slim, unobtrusive */
+* { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* Skeleton shimmer utility */
+.skeleton {
+  border-radius: 8px;
+  background: linear-gradient(
+    100deg,
+    var(--surface-2) 40%,
+    var(--surface-inset) 50%,
+    var(--surface-2) 60%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
 }
 
-button {
-  cursor: pointer;
-  font-family: inherit;
+/* Streaming caret shown at end of generating answer */
+.stream-caret::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--brand);
+  animation: var(--animate-blink);
 }
 
-input {
-  font-family: inherit;
+/* Reduced motion: strip entrance/looping animation globally */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

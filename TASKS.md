@@ -5,7 +5,7 @@
 > implement → verify its acceptance criteria → tick the checkbox → move on.
 > Never skip dependencies. Update this file every time a task completes.
 
-**Progress: 9 / 28 complete**
+**Progress: 13 / 28 complete**
 
 ## Dependency Overview
 
@@ -137,24 +137,28 @@ T01 ─┬─► T02 ─► T03 ─► T04 ─► T05 ─┬─► T06 ─► T0
 ## Phase 7 — Customer UI
 
 ### T21 — Chat experience
-- [ ] Streaming chat, tool-trace timeline, citation chips with tier badges
+- [x] Streaming chat, tool-trace timeline, citation chips with tier badges
 - Refs: §25 · Done when: example queries show tools used + sources cited.
+- Verified 2026-08-26: full redesign shipped (design tokens light/dark, ToolTrace timeline rendering real SSE events, SourceChips parsing actual document_search results, markdown renderer, responsive composer). Verified via live SSE test as northstar_admin: tool_call → tool_result → token events render; citations parsed.
 
 ### T22 — Action confirmation UX
-- [ ] Confirm/decline cards bound only to pendingActionId; success/failure feedback
+- [x] Confirm/decline cards bound only to pendingActionId; success/failure feedback
 - Refs: §23, §25 · Done when: full cancel-order flow works from the browser.
+- Verified 2026-08-26: ActionCard v2 with explicit confirmation sheet, expiry countdown, all backend outcome states (executed/declined/failed/expired/unauthorized/stale). End-to-end tested: draft ORD-1002 cancel → confirm 200 "Order ORD-1002 cancelled successfully"; decline path 200. Fixed pre-existing confirm/decline route bugs (business-ID lookups, audit_log column names) required to make this pass.
 
 ## Phase 8 — Support UI
 
 ### T23 — Internal console
-- [ ] `/internal`: chat, lookup panel, approvals queue (ops_manager), audit viewer (ops_manager)
+- [x] `/internal`: chat, lookup panel, approvals queue (ops_manager), audit viewer (ops_manager)
 - Refs: §26 · Done when: role-scoped rendering + server-side 403s verified.
+- Verified 2026-08-26: ConsoleApp shell (collapsible sidebar, mobile drawer nav) with Overview / AI Support + context panel / Issues / Approvals / Audit views; manager-only items hidden for support_agent while APIs still enforce 403 server-side.
 
 ## Phase 9 — Proactive Issue Detection
 
 ### T24 — Issues endpoint + dashboard
-- [ ] `GET /api/issues` heuristics (spikes, clusters, SLA risk, cross-account incidents, anomalies) anchored to reference_time; findings link evidence; draft-escalation shortcut via normal pipeline
+- [x] `GET /api/issues` heuristics (spikes, clusters, SLA risk, cross-account incidents, anomalies) anchored to reference_time; findings link evidence; draft-escalation shortcut via normal pipeline
 - Refs: §27 · Done when: seeded dataset produces plausible findings; actions still gated.
+- Verified 2026-08-26: returns real findings ("5 tickets nearing or breached SLA", high). Fixed pre-existing reference_time jsonb parsing bug (`extractReferenceTime`) that 500'd the endpoint. UI: severity badges, evidence chips, one-click "Draft in AI chat" prefill.
 
 ## Phase 10 — Hardening
 

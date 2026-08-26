@@ -1,4 +1,4 @@
-﻿/**
+/**
  * POST /api/logout (ARCHITECTURE.md SS5, TASKS.md T08).
  * Revokes the session server-side, clears the cookie, returns redirect to /login.
  * Safe to call multiple times (idempotent).
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const res = NextResponse.json({ redirect: "/login" }, { status: 200 });
+  const res = NextResponse.redirect(new URL("/login", req.url));
   clearSessionCookie(res);
   return res;
 }

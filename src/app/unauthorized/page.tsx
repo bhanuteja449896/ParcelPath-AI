@@ -4,61 +4,36 @@
  */
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Icon } from "@/components/ui/icons";
+import { Logo } from "@/components/navigation/UserMenu";
 
 export const metadata: Metadata = {
-  title: "Access Denied — ParcelPilot",
+  title: "Access denied — ParcelPilot",
 };
 
 export default function UnauthorizedPage() {
   return (
-    <main style={styles.main}>
-      <div style={styles.card}>
-        <div style={styles.icon}>🔒</div>
-        <h1 style={styles.title}>Access Denied</h1>
-        <p style={styles.body}>
-          You do not have permission to view this page.
-          <br />
-          If you believe this is an error, please contact support.
+    <main className="flex min-h-dvh flex-col items-center justify-center bg-canvas px-4 py-8 text-center">
+      <div className="animate-message-in flex max-w-sm flex-col items-center">
+        <Logo />
+        <div className="mt-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-danger-soft text-danger">
+          <Icon.Shield size={24} />
+        </div>
+        <h1 className="mt-5 text-[19px] font-semibold tracking-tight text-ink">
+          You don&apos;t have permission to view this page
+        </h1>
+        <p className="mt-2 text-[13.5px] leading-relaxed text-ink-3">
+          This area is restricted to authorized ParcelPilot staff. If you believe this is a
+          mistake, contact your account manager.
         </p>
-        <Link href="/login" style={styles.link}>
-          ← Return to Login
+        <Link
+          href="/login"
+          className="mt-6 inline-flex h-10 items-center gap-2 rounded-xl border border-line bg-surface px-4 text-[13.5px] font-medium text-ink shadow-card transition-colors hover:bg-surface-2"
+        >
+          <Icon.ArrowLeft size={14} />
+          Back to sign in
         </Link>
       </div>
     </main>
   );
 }
-
-const styles = {
-  main: {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "2rem",
-    background: "var(--bg)",
-  } as React.CSSProperties,
-  card: {
-    textAlign: "center" as const,
-    maxWidth: "400px",
-  } as React.CSSProperties,
-  icon: {
-    fontSize: "3rem",
-    marginBottom: "1rem",
-  } as React.CSSProperties,
-  title: {
-    fontSize: "1.5rem",
-    fontWeight: 700,
-    color: "var(--text)",
-    marginBottom: "0.75rem",
-  } as React.CSSProperties,
-  body: {
-    color: "var(--text-muted)",
-    lineHeight: 1.6,
-    marginBottom: "1.5rem",
-  } as React.CSSProperties,
-  link: {
-    color: "var(--accent)",
-    fontSize: "0.9375rem",
-    fontWeight: 500,
-  } as React.CSSProperties,
-} as const;

@@ -1,0 +1,18 @@
+import postgres from "postgres";
+import fs from "fs";
+import path from "path";
+
+async function main() {
+  const env: Record<string, string> = {};
+  for (const line of fs.readFileSync(path.join(process.cwd(), ".env"), "utf8").split(/\r?\n/)) {
+    const m = line.match(/^([A-Z0-9_a-z]+)=(.*)/);
+    if (m) env[m[1]!] = m[2]!.trim();
+  }
+  const sql = postgres(env.DIRECT_URL!, { prepare: false });
+  const rows = await sql<{ login_id: string; password_hash: string }[]>`SELECT login_id, password_hash FROM users`;
+  for (const r of rows) {
+    console.log(`${r.login_id}: ${r.password_hash.substring(0, 25)}...`);
+  }
+  await sql.end();
+}
+main().catch(console.error);

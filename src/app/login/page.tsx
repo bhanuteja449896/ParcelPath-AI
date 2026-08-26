@@ -1,7 +1,6 @@
 ﻿/**
  * Login page (ARCHITECTURE.md SS5, SS25, TASKS.md T09).
  * Server component — redirects to home if already authenticated.
- * Renders the LoginForm client component.
  */
 import { redirect } from "next/navigation";
 import postgres from "postgres";
@@ -9,6 +8,7 @@ import type { Metadata } from "next";
 import { config } from "@/lib/config";
 import { getSessionTokenFromCookieStore, resolveSession } from "@/lib/auth/session";
 import LoginForm from "@/components/auth/LoginForm";
+import { Logo } from "@/components/navigation/UserMenu";
 
 export const metadata: Metadata = {
   title: "Sign in — ParcelPilot",
@@ -32,56 +32,30 @@ export default async function LoginPage() {
   }
 
   return (
-    <main style={styles.main}>
-      <div style={styles.card}>
-        {/* Logo / branding */}
-        <div style={styles.header}>
-          <div style={styles.logo}>📦</div>
-          <h1 style={styles.title}>ParcelPilot</h1>
-          <p style={styles.subtitle}>AI Support System</p>
+    <main className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-8">
+      <div className="w-full max-w-sm animate-message-in">
+        {/* Brand */}
+        <div className="mb-7 flex flex-col items-center gap-3">
+          <Logo />
+          <p className="-mt-1.5 text-[13px] text-ink-3">AI Support System</p>
         </div>
 
-        <LoginForm />
+        <div className="rounded-2xl border border-line bg-surface p-6 shadow-pop sm:p-8">
+          <h1 className="text-[17px] font-semibold tracking-tight text-ink">Sign in</h1>
+          <p className="mt-1 text-[13px] text-ink-3">
+            Access your ParcelPilot support workspace.
+          </p>
+          <div className="mt-6">
+            <LoginForm />
+          </div>
+        </div>
+
+        <p className="mt-5 text-center text-[12px] leading-relaxed text-ink-3">
+          Customers see only their own account data.
+          <br />
+          Staff access is scoped by role and fully audit-logged.
+        </p>
       </div>
     </main>
   );
 }
-
-const styles = {
-  main: {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "1.5rem",
-    background: "linear-gradient(135deg, #0f1117 0%, #1a1d2e 50%, #0f1117 100%)",
-  } as React.CSSProperties,
-  card: {
-    width: "100%",
-    maxWidth: "420px",
-    background: "var(--surface)",
-    border: "1px solid var(--border)",
-    borderRadius: "var(--radius)",
-    padding: "2.5rem",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
-  } as React.CSSProperties,
-  header: {
-    textAlign: "center" as const,
-    marginBottom: "2rem",
-  } as React.CSSProperties,
-  logo: {
-    fontSize: "2.5rem",
-    marginBottom: "0.75rem",
-  } as React.CSSProperties,
-  title: {
-    fontSize: "1.6rem",
-    fontWeight: 700,
-    color: "var(--text)",
-    letterSpacing: "-0.02em",
-  } as React.CSSProperties,
-  subtitle: {
-    color: "var(--text-muted)",
-    fontSize: "0.875rem",
-    marginTop: "0.25rem",
-  } as React.CSSProperties,
-} as const;

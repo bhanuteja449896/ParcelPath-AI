@@ -4,7 +4,11 @@ import { AgentContext } from "@/lib/types";
 export const calculateSchema = z.object({
   kind: z.enum(["cancellation_fee", "service_credit", "sla_remaining"]).describe("The type of calculation to perform."),
   resourceId: z.string().describe("The business ID of the resource (e.g. ORD-1001 or TKT-2001)."),
-  facts: z.record(z.string(), z.any()).optional().describe("Any facts retrieved from documents (e.g. { 'feeWaiver': true, 'standardFee': 100 })."),
+  facts: z.object({
+    feeWaiver:    z.boolean().nullable().describe("True if the agreement grants a fee waiver. Null if unknown."),
+    waived:       z.boolean().nullable().describe("True if the fee has been explicitly waived. Null if unknown."),
+    standardFee:  z.number().nullable().describe("The standard fee amount in USD if known from documents. Null if unknown."),
+  }).nullable().describe("Facts retrieved from documents that affect the calculation. Pass null if no relevant facts were found."),
 });
 
 export type CalculateArgs = z.infer<typeof calculateSchema>;

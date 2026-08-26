@@ -1,5 +1,7 @@
 import { getDb } from "../client";
+import { AgentContext } from "@/lib/types";
 import { PreAuthUser } from "@/lib/types";
+import { withUserContext } from "../withUserContext";
 
 export const usersRepo = {
   /**
@@ -32,5 +34,22 @@ export const usersRepo = {
     await db`
       SELECT app_record_login_result(${userId}, ${success})
     `;
-  }
+  },
+
+  /**
+   * Safe identity fields for the authenticated user (own row only — RLS scoped).
+   * Used by page headers to display a human-readable label.
+   */
+  async getOwn(
+    ctx: AgentContext
+  ): Promise<{ loginId: string; category: string; role: string } | null> {
+    return await withUserContext(ctx, async (tx) => {
+      const rows = await tx<{ loginId: string; category: string; role: string }[]>`
+        SELECT login_id AS "loginId", category, role
+        FROM users
+        WHERE id = ${ctx.userId}
+      `;
+      return rows[0] ?? null;
+    });
+  },
 };

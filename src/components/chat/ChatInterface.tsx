@@ -1,123 +1,169 @@
 "use client";
-
+/**
+ * ChatInterface — presentational conversation surface shared by both consoles.
+ * Owns no data logic: the parent supplies the useAgentChat instance so context
+ * panels can observe the same stream.
+ */
 import { useEffect, useRef, useState } from "react";
-import { useAgentChat } from "./useAgentChat";
+import type { useAgentChat } from "./useAgentChat";
+import { Composer, SuggestionChip } from "./Composer";
+import { UserMessage, AssistantMessage } from "./Message";
 import { ToolTrace } from "./ToolTrace";
 import { ActionCard } from "./ActionCard";
+import { InlineError } from "@/components/ui/states";
+import { Icon } from "@/components/ui/icons";
 
-export function ChatInterface() {
-  const { messages, sendMessage, isLoading, error } = useAgentChat();
+type Chat = ReturnType<typeof useAgentChat>;
+
+export function ChatInterface({
+  chat,
+  variant = "customer",
+  suggestions,
+  emptyTitle = "Start a conversation",
+  emptyBody,
+  placeholder,
+  prefill,
+  onPrefillConsumed,
+}: {
+  chat: Chat;
+  variant?: "customer" | "support";
+  /** Visual prompt chips (fill the composer only — never application logic) */
+  suggestions?: string[];
+  emptyTitle?: string;
+  emptyBody?: string;
+  placeholder: string;
+  /** Text injected into the composer (e.g. "Draft escalation for TKT-2001") */
+  prefill?: string | null;
+  onPrefillConsumed?: () => void;
+}) {
+  const { messages, isLoading, error, sendMessage, stop, retry } = chat;
   const [input, setInput] = useState("");
-  const endRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
+  const lastMessageId = messages[messages.length - 1]?.id;
 
+  // Track whether the reader is scrolled near the bottom
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      stickToBottomRef.current =
+        el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
-    sendMessage(input);
+  // Follow the stream only while the reader is at the bottom
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !stickToBottomRef.current) return;
+    requestAnimationFrame(() => {
+      el.scrollTo({ top: el.scrollHeight, behavior: messages.length <= 2 ? "auto" : "smooth" });
+    });
+  }, [messages, lastMessageId]);
+
+  // Prefill support ("Draft in AI chat" from issues view).
+  // Adjusting state during render (React-recommended pattern for prop-derived state)
+  const [lastPrefill, setLastPrefill] = useState<string | null>(null);
+  if (prefill && prefill !== lastPrefill) {
+    setLastPrefill(prefill);
+    setInput(prefill);
+    onPrefillConsumed?.();
+  }
+
+  const submit = () => {
+    const text = input.trim();
+    if (!text) return;
     setInput("");
+    stickToBottomRef.current = true;
+    void sendMessage(text);
   };
 
-  // Helper to extract drafted action JSON from the tool result
-  const extractPendingAction = (toolCalls?: any[]) => {
-    if (!toolCalls) return null;
-    const draftTool = toolCalls.find(tc => tc.name === "draft_action" && tc.result);
-    if (!draftTool) return null;
-    try {
-      const result = JSON.parse(draftTool.result);
-      if (result.status === "awaiting_confirmation" && result.pendingActionId) {
-        return {
-          id: result.pendingActionId,
-          summary: result.summary,
-        };
-      }
-    } catch {
-      return null;
-    }
-    return null;
-  };
+  const lastMsgIdx = messages.length - 1;
 
   return (
-    <div className="flex flex-col h-[600px] border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">
-      <div className="bg-slate-50 border-b border-slate-200 p-4">
-        <h2 className="font-semibold text-slate-800">ParcelPath Support Agent</h2>
-        <p className="text-xs text-slate-500">Ask me about your orders, tickets, or policies.</p>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-        {messages.length === 0 && (
-          <div className="text-center text-slate-400 mt-10 text-sm">
-            Send a message to start the conversation!
-          </div>
-        )}
-        
-        {messages.map((msg, idx) => {
-          const isUser = msg.role === "user";
-          const pendingAction = extractPendingAction(msg.toolCalls);
-
-          return (
-            <div key={msg.id || idx} className="flex flex-col">
-              {!isUser && msg.toolCalls?.map((tc, tidx) => (
-                <ToolTrace key={tidx} tool={tc} />
-              ))}
-              
-              {msg.content && (
-                <div className={`flex ${isUser ? "justify-end" : "justify-start"} mt-1`}>
-                  <div 
-                    className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${
-                      isUser 
-                        ? "bg-blue-600 text-white rounded-br-none" 
-                        : "bg-slate-100 text-slate-800 rounded-bl-none"
-                    }`}
-                  >
-                    {msg.content}
-                  </div>
-                </div>
-              )}
-
-              {/* Render action card if this message contains a drafted action */}
-              {!isUser && pendingAction && (
-                <div className="mt-2 ml-2 mr-10">
-                  <ActionCard 
-                    pendingActionId={pendingAction.id} 
-                    summary={pendingAction.summary} 
-                  />
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Messages */}
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6"
+        aria-live="polite"
+      >
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center gap-5 py-10 text-center animate-message-in sm:py-16">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-brand-ink">
+                <Icon.Sparkle size={22} />
+              </span>
+              <div>
+                <p className="text-[17px] font-semibold text-ink">{emptyTitle}</p>
+                {emptyBody && (
+                  <p className="mx-auto mt-1.5 max-w-sm text-[13.5px] leading-relaxed text-ink-3">
+                    {emptyBody}
+                  </p>
+                )}
+              </div>
+              {suggestions && suggestions.length > 0 && (
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {suggestions.map((s) => (
+                    <SuggestionChip key={s} label={s} onClick={() => setInput(s)} />
+                  ))}
                 </div>
               )}
             </div>
-          );
-        })}
+          )}
 
-        {error && (
-          <div className="text-red-500 text-xs text-center my-2 p-2 bg-red-50 rounded">
-            {error}
-          </div>
-        )}
-        <div ref={endRef} />
+          {messages.map((msg, idx) => {
+            const isLast = idx === lastMsgIdx;
+            if (msg.role === "user") return <UserMessage key={msg.id} message={msg} />;
+
+            return (
+              <AssistantMessage
+                key={msg.id}
+                message={msg}
+                showRetry={isLast && !isLoading}
+                onRetry={retry}
+                traceSlot={
+                  msg.toolCalls && msg.toolCalls.length > 0 ? (
+                    <ToolTrace steps={msg.toolCalls} variant={variant} />
+                  ) : undefined
+                }
+                actionSlot={
+                  msg.pendingAction ? (
+                    <ActionCard
+                      pendingActionId={msg.pendingAction.pendingActionId}
+                      summary={msg.pendingAction.summary}
+                      actionType={msg.pendingAction.actionType}
+                    />
+                  ) : undefined
+                }
+              />
+            );
+          })}
+
+          {error && !messages.some((m) => m.error) && (
+            <InlineError message={error} />
+          )}
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-3 border-t border-slate-200 bg-slate-50 flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask a question or request an action..."
-          disabled={isLoading}
-          className="flex-1 border border-slate-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100"
-        />
-        <button
-          type="submit"
-          disabled={!input.trim() || isLoading}
-          className="bg-blue-600 text-white p-2 rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
-        </button>
-      </form>
+      {/* Composer */}
+      <div className="shrink-0 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 sm:px-6">
+        <div className="mx-auto w-full max-w-3xl">
+          <Composer
+            value={input}
+            onChange={setInput}
+            onSubmit={submit}
+            onStop={stop}
+            isLoading={isLoading}
+            placeholder={placeholder}
+          />
+          <p className="mt-1.5 text-center text-[11px] text-ink-3">
+            Answers cite their sources. State-changing actions always require your confirmation.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

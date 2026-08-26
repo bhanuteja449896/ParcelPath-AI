@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Next.js middleware — route guards (ARCHITECTURE.md SS4, SS9, TASKS.md T09).
  *
  * Runs on Node.js runtime (not Edge) to allow postgres.js for session resolution.
@@ -16,7 +16,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import postgres from "postgres";
-import { config } from "@/lib/config";
+import { config as appConfig } from "@/lib/config";
 import {
   getSessionTokenFromRequest,
   resolveSession,
@@ -44,10 +44,13 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   // Resolve session
   const token = getSessionTokenFromRequest(req);
   if (!token) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  const sql = postgres(config.databaseUrl, { prepare: false, max: 1 });
+  const sql = postgres(appConfig.databaseUrl, { prepare: false, max: 1 });
   let ctx: Awaited<ReturnType<typeof resolveSession>>;
   try {
     ctx = await resolveSession(sql as unknown as postgres.Sql, token);
@@ -56,9 +59,14 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   }
 
   if (!ctx) {
-    // Expired or revoked session — clear cookie, redirect to login
+    // Expired or revoked session — clear cookie
+    if (pathname.startsWith("/api/")) {
+      const res = NextResponse.json({ error: "Session expired or invalid." }, { status: 401 });
+      res.cookies.set(appConfig.session.cookieName, "", { maxAge: 0 });
+      return res;
+    }
     const res = NextResponse.redirect(new URL("/login", req.url));
-    res.cookies.set(config.session.cookieName, "", { maxAge: 0 });
+    res.cookies.set(appConfig.session.cookieName, "", { maxAge: 0 });
     return res;
   }
 
@@ -72,7 +80,7 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   return NextResponse.next();
 }
 
-export const config_middleware = {
+export const config = {
   matcher: [
     /*
      * Match all paths except:
@@ -83,6 +91,3 @@ export const config_middleware = {
     "/((?!_next/static|_next/image|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|woff|woff2)).*)",
   ],
 };
-
-// Next.js reads `config` export for matcher — re-export under expected name
-export { config_middleware as config };

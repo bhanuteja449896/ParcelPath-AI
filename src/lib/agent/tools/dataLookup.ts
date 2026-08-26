@@ -6,7 +6,7 @@ import { accountsRepo } from "@/lib/data/repositories/accountsRepo";
 
 export const dataLookupSchema = z.object({
   entity: z.enum(["order", "ticket", "account", "orders", "tickets"]).describe("The type of entity to look up."),
-  id: z.string().optional().describe("The business ID of the entity (e.g., ORD-1001 or TKT-2001). Required for singular entities."),
+  id: z.string().nullable().describe("The business ID of the entity (e.g., ORD-1001 or TKT-2001). Required for singular lookups. Pass null for list queries."),
 });
 
 export type DataLookupArgs = z.infer<typeof dataLookupSchema>;

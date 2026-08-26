@@ -8,11 +8,11 @@ export async function POST(req: NextRequest) {
     const db = getDb();
     const ctxResult = await requireSession(req, db);
     
-    if (ctxResult instanceof NextResponse) {
-      return ctxResult; // Returns 401 if unauthorized
+    if (ctxResult instanceof Response || ('status' in ctxResult && (ctxResult as any).status === 401)) {
+      return ctxResult as NextResponse; // Returns 401 if unauthorized
     }
     
-    const ctx = ctxResult;
+    const ctx = ctxResult as AgentContext;
     
     // In v1, the client sends the conversation history
     const body = await req.json();

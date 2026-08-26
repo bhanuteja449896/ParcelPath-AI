@@ -1,6 +1,6 @@
 import { AgentContext } from "@/lib/types";
 import { withUserContext } from "../withUserContext";
-import postgres from "postgres";
+import { extractReferenceTime } from "../referenceTime";
 
 export type IssueSeverity = "critical" | "high" | "medium" | "low";
 
@@ -20,9 +20,10 @@ export const issuesRepo = {
    */
   async getFindings(ctx: AgentContext): Promise<Finding[]> {
     return await withUserContext(ctx, async (tx) => {
-      // 1. Get reference time
+      // 1. Get reference time (jsonb: { iso, original })
       const refRows = await tx`SELECT value FROM system_metadata WHERE key = 'reference_time'`;
-      const refTimeStr = refRows.length > 0 ? refRows[0].value.replace(/"/g, '') : new Date().toISOString();
+      const refTime = refRows.length > 0 ? extractReferenceTime(refRows[0].value) : new Date();
+      const refTimeStr = refTime.toISOString();
 
       const findings: Finding[] = [];
 
