@@ -9,14 +9,14 @@ import { Skeleton, ErrorState } from "@/components/ui/states";
 import { SeverityBadge, Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/icons";
 
-type ViewId = "overview" | "chat" | "issues" | "approvals" | "audit";
+type ViewId = "overview" | "chat" | "tickets" | "orders" | "issues" | "approvals" | "audit";
 
 interface Metric {
   key: string;
   label: string;
   value: number | null;
   hint: string;
-  icon: "Activity" | "ListChecks" | "Shield";
+  icon: "Activity" | "ListChecks" | "Shield" | "Ticket";
   tone: "warning" | "danger" | "neutral";
   target?: ViewId;
 }
@@ -30,39 +30,45 @@ export function OverviewView({
 }) {
   const [findings, setFindings] = useState<Finding[] | null>(null);
   const [pendingCount, setPendingCount] = useState<number | null>(isManager ? null : 0);
+  const [openTickets, setOpenTickets] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function load() {
-      setError(null);
-      const jobs: Promise<void>[] = [
-        fetch("/api/internal/issues")
+    const jobs: Promise<void>[] = [
+      fetch("/api/internal/issues")
+        .then(async (r) => {
+          if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error ?? "Failed to load issues.");
+          const data = await r.json();
+          if (!cancelled) setFindings(data.findings ?? []);
+        }),
+      fetch("/api/internal/tickets")
+        .then(async (r) => {
+          if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error ?? "Failed to load tickets.");
+          const data = await r.json();
+          if (!cancelled) {
+            const open = (data.tickets ?? []).filter(
+              (t: { status: string }) => !["resolved", "closed"].includes(t.status)
+            );
+            setOpenTickets(open.length);
+          }
+        }),
+    ];
+    if (isManager) {
+      jobs.push(
+        fetch("/api/internal/pending")
           .then(async (r) => {
-            if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error ?? "Failed to load issues.");
+            if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error ?? "Failed to load approvals.");
             const data = await r.json();
-            if (!cancelled) setFindings(data.findings ?? []);
-          }),
-      ];
-      if (isManager) {
-        jobs.push(
-          fetch("/api/internal/pending")
-            .then(async (r) => {
-              if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error ?? "Failed to load approvals.");
-              const data = await r.json();
-              if (!cancelled) setPendingCount((data.actions ?? []).length);
-            })
-        );
-      }
-      try {
-        await Promise.all(jobs);
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message ?? "Could not load dashboard data.");
-      }
+            if (!cancelled) setPendingCount((data.actions ?? []).length);
+          })
+      );
     }
+    Promise.all(jobs).catch((e) => {
+      if (!cancelled) setError(e?.message ?? "Could not load dashboard data.");
+    });
 
-    void load();
     return () => {
       cancelled = true;
     };
@@ -70,24 +76,40 @@ export function OverviewView({
 
   async function refresh() {
     setFindings(null);
+    setOpenTickets(null);
     setPendingCount(isManager ? null : 0);
     setError(null);
-    // Re-trigger by re-fetching directly
     try {
-      const [issuesRes, pendingRes] = await Promise.all([
+      const [issuesRes, ticketsRes, pendingRes] = await Promise.all([
         fetch("/api/internal/issues"),
+        fetch("/api/internal/tickets"),
         isManager ? fetch("/api/internal/pending") : Promise.resolve(null),
       ]);
-      if (!issuesRes.ok) throw new Error("Could not load dashboard data.");
+      if (!issuesRes.ok || !ticketsRes.ok) throw new Error("Could not load dashboard data.");
       setFindings((await issuesRes.json()).findings ?? []);
+      const ticketData = await ticketsRes.json();
+      const open = (ticketData.tickets ?? []).filter(
+        (t: { status: string }) => !["resolved", "closed"].includes(t.status)
+      );
+      setOpenTickets(open.length);
       if (pendingRes && pendingRes.ok) setPendingCount(((await pendingRes.json()).actions ?? []).length);
     } catch (e: any) {
       setError(e?.message ?? "Could not load dashboard data.");
       setFindings([]);
+      setOpenTickets(0);
     }
   }
 
   const metrics: Metric[] = [
+    {
+      key: "tickets",
+      label: "Open tickets",
+      value: openTickets,
+      hint: "Non-resolved workload across all accounts",
+      icon: "Ticket",
+      tone: "warning",
+      target: "tickets",
+    },
     {
       key: "findings",
       label: "Active findings",

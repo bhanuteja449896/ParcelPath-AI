@@ -1,25 +1,39 @@
-import { NextResponse } from "next/server";
-import { getSessionTokenFromCookieStore, resolveSession } from "@/lib/auth/session";
-import postgres from "postgres";
-import { config } from "@/lib/config";
+/**
+ * GET /api/internal/tickets — ticket workload for the support console.
+ * Requires support category. RLS scopes rows; ops see all accounts.
+ */
+import { NextRequest, NextResponse } from "next/server";
+import { getDb } from "@/lib/data/client";
+import { requireSession } from "@/lib/auth/session";
+import { withUserContext } from "@/lib/data/withUserContext";
 import { ticketsRepo } from "@/lib/data/repositories/ticketsRepo";
+import { extractReferenceTime } from "@/lib/data/referenceTime";
 
-export async function GET() {
-  const token = await getSessionTokenFromCookieStore();
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function GET(req: NextRequest) {
+  const db = getDb();
 
-  const sql = postgres(config.databaseUrl, { prepare: false, max: 1 });
+  const ctxResult = await requireSession(req, db);
+  if (ctxResult instanceof NextResponse) return ctxResult;
+  const ctx = ctxResult;
+
+  if (ctx.category !== "support") {
+    return NextResponse.json({ error: "Unauthorized. Requires support role." }, { status: 403 });
+  }
+
   try {
-    const ctx = await resolveSession(sql as unknown as Parameters<typeof resolveSession>[0], token);
-    if (!ctx || ctx.category !== "support") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // Reference time anchors all SLA math (D8) — clients must NOT use wall-clock time
+    const refRows = await withUserContext(ctx, async (tx) => {
+      return tx<{ value: unknown }[]>`
+        SELECT value FROM system_metadata WHERE key = 'reference_time'
+      `;
+    });
+    const referenceTime = (
+      refRows.length > 0 ? extractReferenceTime(refRows[0].value) : new Date()
+    ).toISOString();
 
-    const tickets = await ticketsRepo.listAll(ctx);
-    return NextResponse.json({ tickets });
+    const tickets = await ticketsRepo.listAllDetailed(ctx);
+    return NextResponse.json({ tickets, referenceTime });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
-  } finally {
-    await sql.end({ timeout: 5 });
   }
 }

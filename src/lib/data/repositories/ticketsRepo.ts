@@ -16,6 +16,19 @@ export interface Ticket {
   updatedAt: Date;
 }
 
+/** Ticket enriched for console/AI list views (support context) */
+export interface TicketDetail {
+  ticketId: string;
+  category: string;
+  status: string;
+  priority: string;
+  subject: string;
+  slaDueAt: Date | null;
+  createdAt: Date;
+  accountCode: string | null;
+  accountName: string | null;
+}
+
 const SELECT_COLUMNS = `
   ticket_id AS "ticketId",
   account_id AS "accountId",
@@ -61,16 +74,30 @@ export const ticketsRepo = {
   },
 
   /**
-   * Lists all tickets visible to the current user (used by support).
+   * Lists all tickets visible to the current user (used by support),
+   * enriched with account identity and SLA deadline for console/AI use.
+   * RLS enforces visibility.
    */
-  async listAll(ctx: AgentContext): Promise<Ticket[]> {
+  async listAllDetailed(ctx: AgentContext): Promise<TicketDetail[]> {
     return await withUserContext(ctx, async (tx) => {
       const rows = await tx<any[]>`
-        SELECT ${tx.unsafe(SELECT_COLUMNS)}
-        FROM tickets
-        ORDER BY created_at DESC
+        SELECT t.ticket_id AS "ticketId",
+               t.category,
+               t.status,
+               t.priority,
+               t.subject,
+               t.sla_due_at AS "slaDueAt",
+               t.created_at AS "createdAt",
+               a.code AS "accountCode",
+               a.display_name AS "accountName"
+        FROM tickets t
+        JOIN accounts a ON a.id = t.account_id
+        ORDER BY
+          CASE WHEN t.status IN ('open','escalated') THEN 0 ELSE 1 END,
+          t.sla_due_at ASC NULLS LAST,
+          t.created_at DESC
       `;
-      return rows as Ticket[];
+      return rows as TicketDetail[];
     });
   },
 

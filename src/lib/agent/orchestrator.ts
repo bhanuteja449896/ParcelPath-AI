@@ -94,7 +94,7 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "data_lookup",
-      description: "Look up orders, tickets, or account details by their business ID.",
+      description: "Look up orders, tickets, or account details by their business ID. Support users may also list records: entity='tickets' or 'orders' with id=null returns the current workload across accounts (open/non-resolved items prioritized).",
       parameters: {
         type: "object",
         properties: {
@@ -103,7 +103,7 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             enum: ["order", "ticket", "account", "orders", "tickets"],
             description: "The type of entity to look up.",
           },
-          id: { type: "string", description: "Business ID (e.g. ORD-1001, TKT-2001). Omit for list queries." },
+          id: { type: "string", description: "Business ID (e.g. ORD-1001, TKT-2001). Omit (null) for list queries — support users get a cross-account list." },
         },
         required: ["entity"],
       },

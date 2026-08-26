@@ -13,16 +13,18 @@ import { Icon, type IconName } from "@/components/ui/icons";
 import { OverviewView } from "./OverviewView";
 import { IssuesView } from "./IssuesView";
 import { TicketsView } from "./TicketsView";
+import { OrdersView } from "./OrdersView";
 import { ApprovalsView } from "./ApprovalsView";
 import { AuditView } from "./AuditView";
 import { SupportChatView } from "./SupportChatView";
 
-type ViewId = "overview" | "chat" | "tickets" | "issues" | "approvals" | "audit";
+type ViewId = "overview" | "chat" | "tickets" | "orders" | "issues" | "approvals" | "audit";
 
 const NAV: { id: ViewId; label: string; icon: IconName; managerOnly?: boolean }[] = [
   { id: "overview", label: "Overview", icon: "Grid" },
   { id: "chat", label: "AI Support", icon: "Sparkle" },
   { id: "tickets", label: "Tickets", icon: "Ticket" },
+  { id: "orders", label: "Orders", icon: "Package" },
   { id: "issues", label: "Proactive Issues", icon: "Activity" },
   { id: "approvals", label: "Approvals", icon: "ListChecks", managerOnly: true },
   { id: "audit", label: "Audit log", icon: "Shield", managerOnly: true },
@@ -146,8 +148,9 @@ export function ConsoleApp({
             {view === "chat" && (
               <SupportChatView chat={chat} identity={identity} prefill={prefill} onPrefillConsumed={() => setPrefill(null)} />
             )}
-            {view === "tickets" && <TicketsView onDraftInChat={draftInChat} />}
             {view === "issues" && <IssuesView onDraftInChat={draftInChat} />}
+            {view === "tickets" && <TicketsView onAskAI={draftInChat} />}
+            {view === "orders" && <OrdersView onAskAI={draftInChat} />}
             {view === "approvals" && isManager && <ApprovalsView />}
             {view === "audit" && isManager && <AuditView />}
           </main>

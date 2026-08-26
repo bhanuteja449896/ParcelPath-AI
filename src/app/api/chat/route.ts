@@ -7,18 +7,18 @@ export async function POST(req: NextRequest) {
   try {
     const db = getDb();
     const ctxResult = await requireSession(req, db);
-    
-    if (ctxResult instanceof Response || ('status' in ctxResult && (ctxResult as any).status === 401)) {
-      return ctxResult as NextResponse; // Returns 401 if unauthorized
+
+    if (ctxResult instanceof NextResponse) {
+      return ctxResult; // Returns 401 if unauthorized
     }
-    
-    const ctx = ctxResult as AgentContext;
-    
+
+    const ctx = ctxResult;
+
     // In v1, the client sends the conversation history
     const body = await req.json();
     const messages: ChatMessage[] = body.messages || [];
 
-    if (messages.length === 0) {
+    if (!Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: "No messages provided." }, { status: 400 });
     }
 

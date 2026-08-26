@@ -22,13 +22,13 @@ export function Logo({ compact }: { compact?: boolean }) {
 }
 
 export function ThemeToggle({ className }: { className?: string }) {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
-  }, []);
+  // Read the pre-paint theme (set by the head script in layout.tsx) lazily;
+  // suppressHydrationWarning covers the SSR/client mismatch for the icon.
+  const [theme, setTheme] = useState<"light" | "dark">(() =>
+    typeof document !== "undefined" && document.documentElement.dataset.theme === "dark"
+      ? "dark"
+      : "light"
+  );
 
   const toggle = () => {
     const next = theme === "dark" ? "light" : "dark";
@@ -48,9 +48,10 @@ export function ThemeToggle({ className }: { className?: string }) {
       aria-checked={theme === "dark"}
       aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
       title="Toggle theme"
+      suppressHydrationWarning
       className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink ${className ?? ""}`}
     >
-      {mounted && theme === "dark" ? <Icon.Sun size={16} /> : <Icon.Moon size={16} />}
+      {theme === "dark" ? <Icon.Sun size={16} /> : <Icon.Moon size={16} />}
     </button>
   );
 }

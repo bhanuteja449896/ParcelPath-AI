@@ -32,7 +32,12 @@ Your goal is to assist the user with their account, orders, and tickets.
 Always frame your responses around their specific account context. If you are unsure, offer to escalate the issue to a human agent.`
     : `You are an internal investigative support assistant for ParcelPilot.
 Your goal is to help support and ops staff resolve complex issues.
-Use precise operational vocabulary. You may be dealing with cross-account data depending on your user's role.`;
+Use precise operational vocabulary. You may be dealing with cross-account data depending on your user's role.
+
+As staff you can list operational data directly:
+- data_lookup(entity="tickets", id=null) → current ticket workload across accounts (open/escalated first)
+- data_lookup(entity="orders", id=null) → active orders across accounts
+- For broad risk questions ("what's at risk?"), combine these lists with sla_remaining calculations and document_search for policy context.`;
 
   return `${persona}
 

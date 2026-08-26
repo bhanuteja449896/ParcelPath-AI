@@ -152,6 +152,7 @@ T01 ─┬─► T02 ─► T03 ─► T04 ─► T05 ─┬─► T06 ─► T0
 - [x] `/internal`: chat, lookup panel, approvals queue (ops_manager), audit viewer (ops_manager)
 - Refs: §26 · Done when: role-scoped rendering + server-side 403s verified.
 - Verified 2026-08-26: ConsoleApp shell (collapsible sidebar, mobile drawer nav) with Overview / AI Support + context panel / Issues / Approvals / Audit views; manager-only items hidden for support_agent while APIs still enforce 403 server-side.
+- Extended 2026-08-26 (support-console gaps): added Tickets + Orders views backed by new read-only `/api/internal/tickets` and `/api/internal/orders` endpoints (RLS-scoped via existing repos); Overview now shows live "Open tickets" metric. Fixed `data_lookup` so support users can list tickets/orders cross-account (was hard-failing without accountId), normalized plural-entity+id calls to singular lookups, and fixed `seedUsers.ts` reseed blocker (audit_log/pending_actions FK cleanup).
 
 ## Phase 9 — Proactive Issue Detection
 

@@ -45,7 +45,10 @@ async function main() {
       throw new Error("Seed accounts not found. Run ingest:data first.");
     }
 
-    // 2. Clear old users (cascades to sessions/pending_actions/etc)
+    // 2. Clear old users (sessions cascade; audit_log/pending_actions must be cleared first —
+    //    their FKs to users(id) are intentional append-only references without CASCADE)
+    await tx`DELETE FROM audit_log`;
+    await tx`DELETE FROM pending_actions`;
     await tx`DELETE FROM users`;
 
     const demoUsers = [
